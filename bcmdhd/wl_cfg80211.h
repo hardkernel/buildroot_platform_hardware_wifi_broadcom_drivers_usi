@@ -1,27 +1,9 @@
 /*
  * Linux cfg80211 driver
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
- *      Unless you and Broadcom execute a separate written software license
- * agreement governing use of this software, this software is licensed to you
- * under the terms of the GNU General Public License version 2 (the "GPL"),
- * available at http://www.broadcom.com/licenses/GPLv2.php, with the
- * following added to such license:
- * 
- *      As a special exception, the copyright holders of this software give you
- * permission to link this software with independent modules, and to copy and
- * distribute the resulting executable under terms of your choice, provided that
- * you also meet, for each linked independent module, the terms and conditions of
- * the license of that module.  An independent module is a module which is not
- * derived from this software.  The special exception does not apply to any
- * modifications of the software.
- * 
- *      Notwithstanding the above, under no circumstances may you combine this
- * software in any way with any other Broadcom software provided under a license
- * other than the GPL, without Broadcom's express prior written consent.
+ * $Copyright Open Broadcom Corporation$
  *
- * $Id: wl_cfg80211.h 418267 2013-08-14 12:49:52Z $
+ * $Id: wl_cfg80211.h 431563 2013-10-24 01:50:16Z $
  */
 
 #ifndef _wl_cfg80211_h_
@@ -125,7 +107,7 @@ do {									\
 	}									\
 } while (0)
 #else				/* !(WL_DBG_LEVEL > 0) */
-#define	WL_DBG(args)
+#define	WL_DBG(args) printk args
 #endif				/* (WL_DBG_LEVEL > 0) */
 #define WL_PNO(x)
 #define WL_SD(x)
@@ -159,7 +141,7 @@ do {									\
 #define WL_AF_SEARCH_TIME_MAX           450
 #define WL_AF_TX_EXTRA_TIME_MAX         200
 
-#define WL_SCAN_TIMER_INTERVAL_MS	8000 /* Scan timeout */
+#define WL_SCAN_TIMER_INTERVAL_MS	10000 /* Scan timeout */
 #define WL_CHANNEL_SYNC_RETRY 	5
 #define WL_INVALID 		-1
 
@@ -172,7 +154,7 @@ do {									\
 #define WL_SCAN_SUPPRESS_TIMEOUT 31000 /* default Framwork DHCP timeout is 30 sec */
 #define WL_SCAN_SUPPRESS_RETRY 3000
 
-#define WL_PM_ENABLE_TIMEOUT 3000
+#define WL_PM_ENABLE_TIMEOUT 10000
 
 /* driver status */
 enum wl_status {
@@ -256,6 +238,14 @@ enum wl_management_type {
 	WL_PROBE_RESP = 0x2,
 	WL_ASSOC_RESP = 0x4
 };
+
+enum wl_handler_del_type {
+	WL_HANDLER_NOTUSE,
+	WL_HANDLER_DEL,
+	WL_HANDLER_MAINTAIN,
+	WL_HANDLER_PEND
+};
+
 /* beacon / probe_response */
 struct beacon_proberesp {
 	__le64 timestamp;
@@ -520,7 +510,9 @@ typedef struct sdo_event {
 /* Max length of Interworking element */
 #define IW_IES_MAX_BUF_LEN 		9
 #endif
-
+#ifdef WLFBT
+#define FBT_KEYLEN		32
+#endif
 #define MAX_EVENT_BUF_NUM 16
 typedef struct wl_eventmsg_buf {
     u16 num;
@@ -644,6 +636,14 @@ struct wl_priv {
 	struct delayed_work pm_enable_work;
 	vndr_ie_setbuf_t *ibss_vsie;	/* keep the VSIE for IBSS */
 	int ibss_vsie_len;
+#ifdef SUPPORT_AIBSS
+	u32 aibss_txfail_pid;
+	u32 aibss_txfail_seq;
+#endif /* SUPPORT_AIBSS */
+
+#ifdef WLFBT
+	uint8 fbt_key[FBT_KEYLEN];
+#endif
 };
 
 
@@ -993,5 +993,10 @@ extern s32 wl_cfg80211_ibss_vsie_delete(struct net_device *dev);
 /* Action frame specific functions */
 extern u8 wl_get_action_category(void *frame, u32 frame_len);
 extern int wl_get_public_action(void *frame, u32 frame_len, u8 *ret_action);
-
+#ifdef SUPPORT_AIBSS
+extern void wl_cfg80211_set_txfail_pid(int pid);
+#endif /* SUPPORT_AIBSS */
+#ifdef WLFBT
+extern void wl_get_fbt_key(uint8 *key);
+#endif
 #endif				/* _wl_cfg80211_h_ */

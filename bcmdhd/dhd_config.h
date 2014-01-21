@@ -12,7 +12,9 @@
 #include <linux/mmc/sdio_func.h>
 #endif
 
+#ifdef POWER_OFF_IN_SUSPEND
 extern bool wifi_ready;
+#endif
 extern void *bcmsdh_get_drvdata(void);
 
 #ifdef POWER_OFF_IN_SUSPEND

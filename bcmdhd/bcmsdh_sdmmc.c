@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmsdh_sdmmc.c 418714 2013-08-16 13:21:09Z $
+ * $Id: bcmsdh_sdmmc.c 427054 2013-10-02 03:38:35Z $
  */
 #include <typedefs.h>
 
@@ -898,6 +898,7 @@ sdioh_request_word(sdioh_info_t *sd, uint cmd_type, uint rw, uint func, uint add
                                    uint32 *word, uint nbytes)
 {
 	int err_ret = SDIOH_API_RC_FAIL;
+	int err_ret2 = SDIOH_API_RC_SUCCESS; // terence 20130621: prevent dhd_dpc in dead lock
 #if defined(MMC_SDIO_ABORT)
 	int sdio_abort_retry = MMC_SDIO_ABORT_RETRY_LIMIT;
 #endif
@@ -948,10 +949,10 @@ sdioh_request_word(sdioh_info_t *sd, uint cmd_type, uint rw, uint func, uint add
 				 * As of this time, this is temporaray one
 				 */
 				sdio_writeb(gInstance->func[0],
-					func, SDIOD_CCCR_IOABORT, &err_ret);
+					func, SDIOD_CCCR_IOABORT, &err_ret2);
 				sdio_release_host(gInstance->func[0]);
 			}
-			if (!err_ret)
+			if (!err_ret2)
 				break;
 		}
 		if (err_ret)
@@ -962,7 +963,7 @@ sdioh_request_word(sdioh_info_t *sd, uint cmd_type, uint rw, uint func, uint add
 		}
 	}
 
-	return ((err_ret == 0) ? SDIOH_API_RC_SUCCESS : SDIOH_API_RC_FAIL);
+	return (((err_ret == 0)&&(err_ret2 == 0)) ? SDIOH_API_RC_SUCCESS : SDIOH_API_RC_FAIL);
 }
 
 #ifdef BCMSDIOH_TXGLOM
@@ -1161,8 +1162,8 @@ sdioh_request_packet(sdioh_info_t *sd, uint fix_inc, uint write, uint func,
 		mmc_req.data = &mmc_dat;
 
 		sdio_claim_host(gInstance->func[func]);
-		mmc_set_data_timeout(&mmc_dat, gInstance->func[func]->card);
-		mmc_wait_for_req(gInstance->func[func]->card->host, &mmc_req);
+		////mmc_set_data_timeout(&mmc_dat, gInstance->func[func]->card);
+		////mmc_wait_for_req(gInstance->func[func]->card->host, &mmc_req);
 		sdio_release_host(gInstance->func[func]);
 
 		err_ret = mmc_cmd.error? mmc_cmd.error : mmc_dat.error;
@@ -1235,7 +1236,6 @@ txglomfail:
 					func, blk_size);
 
 				pad = pkt_len - PKTLEN(sd->osh, pnext);
-
 				if (pad > 0) {
 					if (func == SDIO_FUNC_2) {
 						sd_err(("%s: padding is unexpected! pkt_len %d,"

@@ -210,8 +210,9 @@ static int bcmsdh_sdmmc_suspend(struct device *pdev)
 		return 0;
 
 	sd_trace(("%s Enter\n", __FUNCTION__));
-	if (dhd_os_check_wakelock(bcmsdh_get_drvdata()))
+	if (dhd_os_check_wakelock(bcmsdh_get_drvdata())){
 		return -EBUSY;
+	}
 #ifdef POWER_OFF_IN_SUSPEND
 	dhd_conf_wifi_suspend(func);
 #else
@@ -269,6 +270,7 @@ static struct semaphore *notify_semaphore = NULL;
 static int dummy_probe(struct sdio_func *func,
                               const struct sdio_device_id *id)
 {
+
 	if (notify_semaphore)
 		up(notify_semaphore);
 	return 0;

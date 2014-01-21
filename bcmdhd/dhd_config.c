@@ -62,7 +62,7 @@ dhd_conf_wifi_stop(struct net_device *dev)
 		wl_cfg80211_stop();
 		dhd_bus_devreset(bcmsdh_get_drvdata(), true);
 		sdioh_stop(NULL);
-		dhd_customer_gpio_wlan_ctrl(WLAN_RESET_OFF);
+		dhd_customer_gpio_wlan_ctrl(WLAN_POWER_OFF);
 		g_wifi_on = FALSE;
 		wl_cfg80211_user_sync(false);
 	}
@@ -86,10 +86,12 @@ dhd_conf_wifi_power(bool on)
 		wl_cfgp2p_start_p2p_device(NULL, NULL);
 		else		
 			printk("======= ON : no p2p ======\n");
+        //wl_cfg80211_up(NULL);
 		wl_cfg80211_user_sync(false);
 		wifi_ready = true;
 	} else {
 		wifi_ready = false;
+        //wl_cfg80211_down(NULL);
 		if (wlcfg_drv_priv && wlcfg_drv_priv->p2p) {
 		wl_cfgp2p_clear_management_ie(wlcfg_drv_priv, 0);
 		wl_cfgp2p_clear_management_ie(wlcfg_drv_priv, 1);
@@ -104,7 +106,7 @@ dhd_conf_wifi_power(bool on)
 void
 dhd_conf_probe_workqueue(struct work_struct *work)
 {
-    dhd_conf_wifi_power(true);
+    //dhd_conf_wifi_power(false);
 }
 
 void
@@ -148,7 +150,7 @@ dhd_conf_register_wifi_suspend(struct sdio_func *func)
 	if (func->num == 2) {
 		sdioinfo[func->num].func = func;
 		sdioinfo[func->num].do_late_resume = 0;
-		sdioinfo[func->num].sdio_early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN - 30;
+		sdioinfo[func->num].sdio_early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 30;
 		sdioinfo[func->num].sdio_early_suspend.suspend = dhd_conf_early_suspend;
 		sdioinfo[func->num].sdio_early_suspend.resume = dhd_conf_late_resume;
 		register_early_suspend(&sdioinfo[func->num].sdio_early_suspend);

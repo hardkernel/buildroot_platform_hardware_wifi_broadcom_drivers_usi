@@ -398,8 +398,10 @@ bcmsdh_reg_read(void *sdh, uint32 addr, uint size)
 
 	ASSERT(bcmsdh->init_success);
 
-	if (bcmsdhsdio_set_sbaddr_window(bcmsdh, addr, FALSE))
+	if (bcmsdhsdio_set_sbaddr_window(bcmsdh, addr, FALSE)) {
+		bcmsdh->regfail = TRUE; // terence 20130621: prevent dhd_dpc in dead lock
 		return 0xFFFFFFFF;
+	}
 
 	addr &= SBSDIO_SB_OFT_ADDR_MASK;
 	if (size == 4)
@@ -447,8 +449,10 @@ bcmsdh_reg_write(void *sdh, uint32 addr, uint size, uint32 data)
 
 	ASSERT(bcmsdh->init_success);
 
-	if ((err = bcmsdhsdio_set_sbaddr_window(bcmsdh, addr, FALSE)))
+	if ((err = bcmsdhsdio_set_sbaddr_window(bcmsdh, addr, FALSE))) {
+		bcmsdh->regfail = TRUE; // terence 20130621:
 		return err;
+	}
 
 	addr &= SBSDIO_SB_OFT_ADDR_MASK;
 	if (size == 4)

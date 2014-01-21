@@ -4,27 +4,9 @@
  * Provides type definitions and function prototypes used to link the
  * DHD OS, bus, and protocol modules.
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
- *      Unless you and Broadcom execute a separate written software license
- * agreement governing use of this software, this software is licensed to you
- * under the terms of the GNU General Public License version 2 (the "GPL"),
- * available at http://www.broadcom.com/licenses/GPLv2.php, with the
- * following added to such license:
- * 
- *      As a special exception, the copyright holders of this software give you
- * permission to link this software with independent modules, and to copy and
- * distribute the resulting executable under terms of your choice, provided that
- * you also meet, for each linked independent module, the terms and conditions of
- * the license of that module.  An independent module is a module which is not
- * derived from this software.  The special exception does not apply to any
- * modifications of the software.
- * 
- *      Notwithstanding the above, under no circumstances may you combine this
- * software in any way with any other Broadcom software provided under a license
- * other than the GPL, without Broadcom's express prior written consent.
+ * $Copyright Open Broadcom Corporation$
  *
- * $Id: dhd.h 419132 2013-08-19 21:33:05Z $
+ * $Id: dhd.h 432624 2013-10-29 03:02:32Z $
  */
 
 /****************
@@ -349,6 +331,13 @@ typedef struct dhd_pub {
 #if defined(BCMSUP_4WAY_HANDSHAKE) && defined(WLAN_AKM_SUITE_FT_8021X)
 	bool fw_4way_handshake;		/* Whether firmware will to do the 4way handshake. */
 #endif
+#if defined(CUSTOM_PLATFORM_NV_TEGRA)
+#ifdef PKT_FILTER_SUPPORT
+	uint pkt_filter_mode;
+	uint pkt_filter_ports_count;
+	uint16 pkt_filter_ports[WL_PKT_FILTER_PORTS_MAX];
+#endif /* PKT_FILTER_SUPPORT */
+#endif /* defined(CUSTOM_PLATFORM_NV_TEGRA) */
 } dhd_pub_t;
 typedef struct dhd_cmn {
 	osl_t *osh;		/* OSL handle */
@@ -418,6 +407,7 @@ extern int dhd_os_wake_unlock(dhd_pub_t *pub);
 extern int dhd_os_wake_lock_timeout(dhd_pub_t *pub);
 extern int dhd_os_wake_lock_rx_timeout_enable(dhd_pub_t *pub, int val);
 extern int dhd_os_wake_lock_ctrl_timeout_enable(dhd_pub_t *pub, int val);
+extern int dhd_os_wake_lock_ctrl_timeout_cancel(dhd_pub_t *pub);
 extern int dhd_os_wd_wake_lock(dhd_pub_t *pub);
 extern int dhd_os_wd_wake_unlock(dhd_pub_t *pub);
 
@@ -451,6 +441,8 @@ inline static void MUTEX_UNLOCK_SOFTAP_SET(dhd_pub_t * dhdp)
 	dhd_os_wake_lock_rx_timeout_enable(pub, val)
 #define DHD_OS_WAKE_LOCK_CTRL_TIMEOUT_ENABLE(pub, val) \
 	dhd_os_wake_lock_ctrl_timeout_enable(pub, val)
+#define DHD_OS_WAKE_LOCK_CTRL_TIMEOUT_CANCEL(pub) \
+	dhd_os_wake_lock_ctrl_timeout_cancel(pub)
 #define DHD_PACKET_TIMEOUT_MS	1000
 #define DHD_EVENT_TIMEOUT_MS	1500
 
@@ -584,10 +576,24 @@ extern int dhd_keep_alive_onoff(dhd_pub_t *dhd);
 #define DHD_MULTICAST6_FILTER_NUM	3
 #define DHD_MDNS_FILTER_NUM		4
 #define DHD_ARP_FILTER_NUM		5
-extern int 	dhd_os_enable_packet_filter(dhd_pub_t *dhdp, int val);
+
+#if defined(CUSTOM_PLATFORM_NV_TEGRA)
+/* Port based packet filtering command actions */
+#define PKT_FILTER_PORTS_CLEAR		0
+#define PKT_FILTER_PORTS_ADD		1
+#define PKT_FILTER_PORTS_DEL		2
+#define PKT_FILTER_PORTS_LOOPBACK	3
+#define PKT_FILTER_PORTS_MAX		PKT_FILTER_PORTS_LOOPBACK
+#endif /* defined(CUSTOM_PLATFORM_NV_TEGRA) */
+
+extern int dhd_os_enable_packet_filter(dhd_pub_t *dhdp, int val);
 extern void dhd_enable_packet_filter(int value, dhd_pub_t *dhd);
 extern int net_os_enable_packet_filter(struct net_device *dev, int val);
 extern int net_os_rxfilter_add_remove(struct net_device *dev, int val, int num);
+#if defined(CUSTOM_PLATFORM_NV_TEGRA)
+extern void dhd_set_packet_filter_mode(struct net_device *dev, char *command);
+extern int dhd_set_packet_filter_ports(struct net_device *dev, char *command);
+#endif /* defined(CUSTOM_PLATFORM_NV_TEGRA) */
 #endif /* PKT_FILTER_SUPPORT */
 
 extern int dhd_get_suspend_bcn_li_dtim(dhd_pub_t *dhd);

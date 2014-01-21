@@ -1,25 +1,7 @@
 /*
  * SDIO access interface for drivers - linux specific (pci only)
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
- *      Unless you and Broadcom execute a separate written software license
- * agreement governing use of this software, this software is licensed to you
- * under the terms of the GNU General Public License version 2 (the "GPL"),
- * available at http://www.broadcom.com/licenses/GPLv2.php, with the
- * following added to such license:
- * 
- *      As a special exception, the copyright holders of this software give you
- * permission to link this software with independent modules, and to copy and
- * distribute the resulting executable under terms of your choice, provided that
- * you also meet, for each linked independent module, the terms and conditions of
- * the license of that module.  An independent module is a module which is not
- * derived from this software.  The special exception does not apply to any
- * modifications of the software.
- * 
- *      Notwithstanding the above, under no circumstances may you combine this
- * software in any way with any other Broadcom software provided under a license
- * other than the GPL, without Broadcom's express prior written consent.
+ * $Copyright Open Broadcom Corporation$
  *
  * $Id: bcmsdh_linux.c 414953 2013-07-26 17:36:27Z $
  */
@@ -75,13 +57,12 @@ struct bcmsdh_hc {
 };
 static bcmsdh_hc_t *sdhcinfo = NULL;
 
-struct device *pm_dev;
 
 /* driver info, initialized when bcmsdh_register is called */
 static bcmsdh_driver_t drvinfo = {NULL, NULL};
 
 /* debugging macros */
-#define SDLX_MSG(x)
+#define SDLX_MSG(x) printf x
 
 /**
  * Checks to see if vendor and device IDs match a supported SDIO Host Controller.
@@ -230,10 +211,6 @@ int bcmsdh_probe(struct device *dev)
 	sdhc->next = sdhcinfo;
 	sdhcinfo = sdhc;
 
-#if !defined(CONFIG_HAS_WAKELOCK) && (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 36))
-	if (!device_init_wakeup(dev, 1))
-		pm_dev = dev;
-#endif /* !CONFIG_HAS_WAKELOCK */
 
 	/* Read the vendor/device ID from the CIS */
 	vendevid = bcmsdh_query_device(sdh);
@@ -253,7 +230,6 @@ err:
 		if (sdhc->sdh)
 			bcmsdh_detach(sdhc->osh, sdhc->sdh);
 		MFREE(osh, sdhc, sizeof(bcmsdh_hc_t));
-		sdhcinfo = sdhc_org;
 	}
 	if (osh)
 		osl_detach(osh);
@@ -267,20 +243,17 @@ int bcmsdh_remove(struct device *dev)
 {
 	bcmsdh_hc_t *sdhc, *prev;
 	osl_t *osh;
-	int sdhcinfo_null = false;
+	sdhc = sdhcinfo;
+	drvinfo.detach(sdhc->ch);
+	bcmsdh_detach(sdhc->osh, sdhc->sdh);
 
 	/* find the SDIO Host Controller state for this pdev and take it out from the list */
 	for (sdhc = sdhcinfo, prev = NULL; sdhc; sdhc = sdhc->next) {
 		if (sdhc->dev == (void *)dev) {
 			if (prev)
 				prev->next = sdhc->next;
-			else {
-				if (sdhc->next != NULL) {
-					SDLX_MSG(("%s: more SDHC exist, should be care about it\n",
-						__FUNCTION__));
-				}
-				sdhcinfo_null = true;
-			}
+			else
+				sdhcinfo = NULL;
 			break;
 		}
 		prev = sdhc;
@@ -291,18 +264,7 @@ int bcmsdh_remove(struct device *dev)
 	}
 
 	/* detach ch & sdhc if dev is valid */
-	drvinfo.detach(sdhc->ch);
-	bcmsdh_detach(sdhc->osh, sdhc->sdh);
 
-#if !defined(CONFIG_HAS_WAKELOCK) && (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 36))
-	if (pm_dev) {
-		device_init_wakeup(pm_dev, 0);
-		pm_dev = NULL;
-	}
-#endif /* !CONFIG_HAS_WAKELOCK */
-
-	if (sdhcinfo_null == true)
-		sdhcinfo = NULL;
 
 	/* release SDIO Host Controller info */
 	osh = sdhc->osh;
@@ -601,6 +563,14 @@ bcmsdh_unregister(void)
 #endif /* BCMPLATFORM_BUS */
 }
 
+int bcmsdh_set_drvdata(void * dhdp)
+{
+	SDLX_MSG(("%s: Enter\n", __FUNCTION__));
+
+	dev_set_drvdata(sdhcinfo->dev, dhdp);
+
+	return 0;
+}
 #if defined(OOB_INTR_ONLY)
 void bcmsdh_oob_intr_set(bool enable)
 {
@@ -654,7 +624,7 @@ int bcmsdh_register_oob_intr(void * dhdp)
 			"bcmsdh_sdmmc", NULL);
 		if (error)
 			return -ENODEV;
-
+#if 0
 #if defined(CONFIG_ARCH_RHEA) || defined(CONFIG_ARCH_CAPRI)
 		if (device_may_wakeup(sdhcinfo->dev)) {
 #endif
@@ -664,6 +634,7 @@ int bcmsdh_register_oob_intr(void * dhdp)
 #endif
 		if (error)
 			SDLX_MSG(("%s enable_irq_wake error=%d \n", __FUNCTION__, error));
+#endif
 		sdhcinfo->oob_irq_registered = TRUE;
 		sdhcinfo->oob_irq_enable_flag = TRUE;
 	}

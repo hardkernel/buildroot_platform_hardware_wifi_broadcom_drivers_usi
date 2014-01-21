@@ -1,27 +1,9 @@
 /*
  * Misc useful os-independent macros and functions.
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
- *      Unless you and Broadcom execute a separate written software license
- * agreement governing use of this software, this software is licensed to you
- * under the terms of the GNU General Public License version 2 (the "GPL"),
- * available at http://www.broadcom.com/licenses/GPLv2.php, with the
- * following added to such license:
- * 
- *      As a special exception, the copyright holders of this software give you
- * permission to link this software with independent modules, and to copy and
- * distribute the resulting executable under terms of your choice, provided that
- * you also meet, for each linked independent module, the terms and conditions of
- * the license of that module.  An independent module is a module which is not
- * derived from this software.  The special exception does not apply to any
- * modifications of the software.
- * 
- *      Notwithstanding the above, under no circumstances may you combine this
- * software in any way with any other Broadcom software provided under a license
- * other than the GPL, without Broadcom's express prior written consent.
+ * $Copyright Open Broadcom Corporation$
  *
- * $Id: bcmutils.h 412804 2013-07-16 16:26:39Z $
+ * $Id: bcmutils.h 427979 2013-10-07 08:35:57Z $
  */
 
 #ifndef	_bcmutils_h_
@@ -378,7 +360,7 @@ extern int bcm_ether_atoe(const char *p, struct ether_addr *ea);
 
 struct ipv4_addr;
 extern char *bcm_ip_ntoa(struct ipv4_addr *ia, char *buf);
-
+extern int bcm_atoipv4(const char *p, struct ipv4_addr *ip);
 
 extern void bcm_mdelay(uint ms);
 

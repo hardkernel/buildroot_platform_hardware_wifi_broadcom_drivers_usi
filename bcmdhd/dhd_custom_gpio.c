@@ -1,24 +1,6 @@
 /*
 * Customer code to add GPIO control during WLAN start/stop
-* Copyright (C) 1999-2013, Broadcom Corporation
-* 
-*      Unless you and Broadcom execute a separate written software license
-* agreement governing use of this software, this software is licensed to you
-* under the terms of the GNU General Public License version 2 (the "GPL"),
-* available at http://www.broadcom.com/licenses/GPLv2.php, with the
-* following added to such license:
-* 
-*      As a special exception, the copyright holders of this software give you
-* permission to link this software with independent modules, and to copy and
-* distribute the resulting executable under terms of your choice, provided that
-* you also meet, for each linked independent module, the terms and conditions of
-* the license of that module.  An independent module is a module which is not
-* derived from this software.  The special exception does not apply to any
-* modifications of the software.
-* 
-*      Notwithstanding the above, under no circumstances may you combine this
-* software in any way with any other Broadcom software provided under a license
-* other than the GPL, without Broadcom's express prior written consent.
+* $Copyright Open Broadcom Corporation$
 *
 * $Id: dhd_custom_gpio.c 417465 2013-08-09 11:47:27Z $
 */
@@ -42,6 +24,9 @@ extern  void sdio_reinit(void);
 extern void extern_wifi_set_enable(int is_on);
 #endif /* CUSTOMER_HW_AMLOGIC */
 #ifdef CUSTOMER_HW
+#if defined(CUSTOMER_OOB)
+extern int bcm_wlan_get_oob_irq(void);
+#endif
 extern  void bcm_wlan_power_off(int);
 extern  void bcm_wlan_power_on(int);
 #endif /* CUSTOMER_HW */
@@ -98,6 +83,8 @@ int dhd_customer_oob_irq_map(unsigned long *irq_flags_ptr)
 #if defined(CUSTOMER_HW2) && !defined(PLATFORM_MPS)
 	host_oob_irq = wifi_get_irq_number(irq_flags_ptr);
 
+#elif defined(CUSTOMER_OOB)
+	host_oob_irq = bcm_wlan_get_oob_irq();
 #else
 #if defined(CUSTOM_OOB_GPIO_NUM)
 	if (dhd_oob_gpio_num < 0) {

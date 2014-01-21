@@ -1,29 +1,11 @@
 /*
  * Broadcom Event  protocol definitions
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
- *      Unless you and Broadcom execute a separate written software license
- * agreement governing use of this software, this software is licensed to you
- * under the terms of the GNU General Public License version 2 (the "GPL"),
- * available at http://www.broadcom.com/licenses/GPLv2.php, with the
- * following added to such license:
- * 
- *      As a special exception, the copyright holders of this software give you
- * permission to link this software with independent modules, and to copy and
- * distribute the resulting executable under terms of your choice, provided that
- * you also meet, for each linked independent module, the terms and conditions of
- * the license of that module.  An independent module is a module which is not
- * derived from this software.  The special exception does not apply to any
- * modifications of the software.
- * 
- *      Notwithstanding the above, under no circumstances may you combine this
- * software in any way with any other Broadcom software provided under a license
- * other than the GPL, without Broadcom's express prior written consent.
+ * $Copyright Open Broadcom Corporation$
  *
  * Dependencies: proto/bcmeth.h
  *
- * $Id: bcmevent.h 419132 2013-08-19 21:33:05Z $
+ * $Id: bcmevent.h 429124 2013-10-11 09:47:05Z $
  *
  */
 
@@ -155,8 +137,9 @@ typedef BWL_PRE_PACKED_STRUCT struct bcm_event {
 #define WLC_E_IF		54	
 #define WLC_E_P2P_DISC_LISTEN_COMPLETE	55	
 #define WLC_E_RSSI		56	
-#define WLC_E_PFN_BEST_BATCHING     57  
 #define WLC_E_PFN_SCAN_COMPLETE	57	
+
+#define WLC_E_PFN_BEST_BATCHING	57
 #define WLC_E_EXTLOG_MSG	58
 #define WLC_E_ACTION_FRAME      59 	
 #define WLC_E_ACTION_FRAME_COMPLETE	60	
@@ -181,11 +164,12 @@ typedef BWL_PRE_PACKED_STRUCT struct bcm_event {
 #define WLC_E_OVERLAY_REQ	79	
 #define WLC_E_CSA_COMPLETE_IND		80	
 #define WLC_E_EXCESS_PM_WAKE_EVENT	81	
-#define WLC_E_PFN_BSSID_NET_FOUND   82	
 #define WLC_E_PFN_SCAN_NONE		82	
-#define WLC_E_PFN_BSSID_NET_LOST    83  
 
+#define WLC_E_PFN_BSSID_NET_FOUND	82
 #define WLC_E_PFN_SCAN_ALLGONE		83	
+
+#define WLC_E_PFN_BSSID_NET_LOST	83
 #define WLC_E_GTK_PLUMBED		84
 #define WLC_E_ASSOC_IND_NDIS		85	
 #define WLC_E_REASSOC_IND_NDIS		86	
@@ -215,6 +199,7 @@ typedef BWL_PRE_PACKED_STRUCT struct bcm_event {
 #define WLC_E_NONE			108	
 #define WLC_E_PROXD			109	
 #define WLC_E_IBSS_COALESCE		110	
+#define WLC_E_AIBSS_TXFAIL		110	
 #define WLC_E_AWDL_AW_EXT_END		111	
 #define WLC_E_AWDL_AW_EXT_START		112	
 #define WLC_E_AWDL_AW_START		113	
@@ -229,7 +214,8 @@ typedef BWL_PRE_PACKED_STRUCT struct bcm_event {
 #define WLC_E_CSA_DONE_IND		122
 #define WLC_E_CSA_FAILURE_IND		123
 #define WLC_E_CCA_CHAN_QUAL		124	
-#define WLC_E_LAST			125	
+#define WLC_E_CCX_S69_RESP_RX	129
+#define WLC_E_LAST			130	
 
 
 

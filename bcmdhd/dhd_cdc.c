@@ -1,27 +1,9 @@
 /*
  * DHD Protocol Module for CDC and BDC.
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
- *      Unless you and Broadcom execute a separate written software license
- * agreement governing use of this software, this software is licensed to you
- * under the terms of the GNU General Public License version 2 (the "GPL"),
- * available at http://www.broadcom.com/licenses/GPLv2.php, with the
- * following added to such license:
- * 
- *      As a special exception, the copyright holders of this software give you
- * permission to link this software with independent modules, and to copy and
- * distribute the resulting executable under terms of your choice, provided that
- * you also meet, for each linked independent module, the terms and conditions of
- * the license of that module.  An independent module is a module which is not
- * derived from this software.  The special exception does not apply to any
- * modifications of the software.
- * 
- *      Notwithstanding the above, under no circumstances may you combine this
- * software in any way with any other Broadcom software provided under a license
- * other than the GPL, without Broadcom's express prior written consent.
+ * $Copyright Open Broadcom Corporation$
  *
- * $Id: dhd_cdc.c 416698 2013-08-06 07:53:34Z $
+ * $Id: dhd_cdc.c 434146 2013-11-05 13:06:16Z $
  *
  * BDC is like CDC, except it includes a header for data packets to convey
  * packet priority over the bus, and flags (e.g. to indicate checksum status
@@ -104,8 +86,11 @@ dhdcdc_cmplt(dhd_pub_t *dhd, uint32 id, uint32 len)
 
 	do {
 		ret = dhd_bus_rxctl(dhd->bus, (uchar*)&prot->msg, cdc_len);
-		if (ret < 0)
+		if (ret < 0) {
+            dump_stack();
+            DHD_ERROR(("%s: dhd_bus_rxctl failed %d\n", __FUNCTION__, ret));
 			break;
+		}
 	} while (CDC_IOC_ID(ltoh32(prot->msg.flags)) != id);
 
 
@@ -207,6 +192,7 @@ dhdcdc_set_ioctl(dhd_pub_t *dhd, int ifidx, uint cmd, void *buf, uint len, uint8
 
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 	DHD_CTL(("%s: cmd %d len %d\n", __FUNCTION__, cmd, len));
+    //printk("%s cmd %d len %d\n", __FUNCTION__, cmd, len);
 
 	if (dhd->busstate == DHD_BUS_DOWN) {
 		DHD_ERROR(("%s : bus is down. we have nothing to do\n", __FUNCTION__));
@@ -219,7 +205,6 @@ dhdcdc_set_ioctl(dhd_pub_t *dhd, int ifidx, uint cmd, void *buf, uint len, uint8
 			__FUNCTION__));
 		return -EIO;
 	}
-
 
 	memset(msg, 0, sizeof(cdc_ioctl_t));
 
@@ -236,12 +221,18 @@ dhdcdc_set_ioctl(dhd_pub_t *dhd, int ifidx, uint cmd, void *buf, uint len, uint8
 		memcpy(prot->buf, buf, len);
 
 	if ((ret = dhdcdc_msg(dhd)) < 0) {
+        dump_stack();
 		DHD_ERROR(("%s: dhdcdc_msg failed w/status %d\n", __FUNCTION__, ret));
 		goto done;
 	}
+    //printk("1 msg->flags:%d msg->status:%d\n", msg->flags, msg->status);
 
-	if ((ret = dhdcdc_cmplt(dhd, prot->reqid, len)) < 0)
+	if ((ret = dhdcdc_cmplt(dhd, prot->reqid, len)) < 0) {
+        dump_stack();
+        DHD_ERROR(("%s: dhdcdc_cmplt failed %d\n", __FUNCTION__, ret));
 		goto done;
+	}
+    //printk("2 msg->flags:%d msg->status:%d\n", msg->flags, msg->status);
 
 	flags = ltoh32(msg->flags);
 	id = (flags & CDCF_IOC_ID_MASK) >> CDCF_IOC_ID_SHIFT;
@@ -257,6 +248,8 @@ dhdcdc_set_ioctl(dhd_pub_t *dhd, int ifidx, uint cmd, void *buf, uint len, uint8
 	if (flags & CDCF_IOC_ERROR)
 	{
 		ret = ltoh32(msg->status);
+        dump_stack();
+        printk("ret:%d msg->status:%d\n", ret, msg->status);
 		/* Cache error from dongle */
 		dhd->dongle_error = ret;
 	}
@@ -272,12 +265,14 @@ dhd_prot_ioctl(dhd_pub_t *dhd, int ifidx, wl_ioctl_t * ioc, void * buf, int len)
 	dhd_prot_t *prot = dhd->prot;
 	int ret = -1;
 	uint8 action;
+	static int error_cnt = 0;
 
 	if ((dhd->busstate == DHD_BUS_DOWN) || dhd->hang_was_sent) {
 		DHD_ERROR(("%s : bus is down. we have nothing to do\n", __FUNCTION__));
 		goto done;
 	}
 
+    //printk("%s enter\n", __FUNCTION__);
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 
 	ASSERT(len <= WLC_IOCTL_MAXLEN);
@@ -290,7 +285,7 @@ dhd_prot_ioctl(dhd_pub_t *dhd, int ifidx, wl_ioctl_t * ioc, void * buf, int len)
 			ioc->cmd, (unsigned long)ioc->cmd, prot->lastcmd,
 			(unsigned long)prot->lastcmd));
 		if ((ioc->cmd == WLC_SET_VAR) || (ioc->cmd == WLC_GET_VAR)) {
-			DHD_TRACE(("iovar cmd=%s\n", (char*)buf));
+			DHD_ERROR(("iovar cmd=%s\n", (char*)buf));
 		}
 		goto done;
 	}
@@ -305,6 +300,13 @@ dhd_prot_ioctl(dhd_pub_t *dhd, int ifidx, wl_ioctl_t * ioc, void * buf, int len)
 		if (ret > 0)
 			ioc->used = ret - sizeof(cdc_ioctl_t);
 	}
+	// terence 20130805: send hang event to wpa_supplicant
+	if (ret == -EIO) {
+		error_cnt++;
+		if (error_cnt > 2)
+			ret = -ETIMEDOUT;
+	} else
+		error_cnt = 0;
 
 	/* Too many programs assume ioctl() returns 0 on success */
 	if (ret >= 0)

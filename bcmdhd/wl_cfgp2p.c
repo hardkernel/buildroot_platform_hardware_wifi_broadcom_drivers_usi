@@ -1,27 +1,9 @@
 /*
  * Linux cfgp2p driver
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
- *      Unless you and Broadcom execute a separate written software license
- * agreement governing use of this software, this software is licensed to you
- * under the terms of the GNU General Public License version 2 (the "GPL"),
- * available at http://www.broadcom.com/licenses/GPLv2.php, with the
- * following added to such license:
- * 
- *      As a special exception, the copyright holders of this software give you
- * permission to link this software with independent modules, and to copy and
- * distribute the resulting executable under terms of your choice, provided that
- * you also meet, for each linked independent module, the terms and conditions of
- * the license of that module.  An independent module is a module which is not
- * derived from this software.  The special exception does not apply to any
- * modifications of the software.
- * 
- *      Notwithstanding the above, under no circumstances may you combine this
- * software in any way with any other Broadcom software provided under a license
- * other than the GPL, without Broadcom's express prior written consent.
+ * $Copyright Open Broadcom Corporation$
  *
- * $Id: wl_cfgp2p.c 419821 2013-08-22 21:43:26Z $
+ * $Id: wl_cfgp2p.c 432088 2013-10-25 15:02:04Z $
  *
  */
 #include <typedefs.h>
@@ -46,11 +28,6 @@
 #include <wl_cfgp2p.h>
 #include <wldev_common.h>
 #include <wl_android.h>
-
-
-#ifdef USI_MFG
-extern int isMFG;
-#endif /*USI_MFG*/
 
 static s8 scanparambuf[WLC_IOCTL_SMLEN];
 static s8 g_mgmt_ie_buf[2048];
@@ -581,6 +558,18 @@ wl_cfgp2p_set_p2p_mode(struct wl_priv *wl, u8 mode, u32 channel, u16 listen_ms, 
 		return BCME_NOTFOUND;
 	}
 
+#if defined(CUSTOM_PLATFORM_NV_TEGRA)
+#if defined(P2P_DISCOVERY_WAR)
+	if (mode == WL_P2P_DISC_ST_LISTEN || mode == WL_P2P_DISC_ST_SEARCH) {
+		if (!wl->p2p->vif_created) {
+			if (wldev_iovar_setint(wl_to_prmry_ndev(wl), "mpc", 0) < 0) {
+				WL_ERR(("mpc disabling failed\n"));
+			}
+		}
+	}
+#endif /* defined(P2P_DISCOVERY_WAR) */
+#endif /* defined(CUSTOM_PLATFORM_NV_TEGRA) */
+
 	/* Put the WL driver into P2P Listen Mode to respond to P2P probe reqs */
 	discovery_mode.state = mode;
 	discovery_mode.chspec = wl_ch_host_to_driver(channel);
@@ -1005,9 +994,8 @@ wl_cfgp2p_parse_vndr_ies(u8 *parse, u32 len,
 
 	WL_INFO(("---> len %d\n", len));
 	ie = (bcm_tlv_t *) parse;
-	if (!bcm_valid_tlv(ie, remained_len)){
+	if (!bcm_valid_tlv(ie, remained_len))
 		ie = NULL;
-	}
 	while (ie) {
 		if (count >= MAX_VNDR_IE_NUMBER)
 			break;
@@ -1170,7 +1158,7 @@ wl_cfgp2p_set_management_ie(struct wl_priv *wl, struct net_device *ndev, s32 bss
 		/* parse and save new vndr_ie in curr_ie_buff before comparing it */
 		if (vndr_ie && vndr_ie_len && curr_ie_buf) {
 			ptr = curr_ie_buf;
-			
+
 			wl_cfgp2p_parse_vndr_ies((u8*)vndr_ie,
 				vndr_ie_len, &new_vndr_ies);
 
@@ -1187,7 +1175,7 @@ wl_cfgp2p_set_management_ie(struct wl_priv *wl, struct net_device *ndev, s32 bss
 		if (mgmt_ie_buf != NULL) {
 			if (parsed_ie_buf_len && (parsed_ie_buf_len == *mgmt_ie_len) &&
 			     (memcmp(mgmt_ie_buf, curr_ie_buf, parsed_ie_buf_len) == 0)) {
-				CFGP2P_INFO(("Previous mgmt IE is equals to current IE\n"));
+				CFGP2P_INFO(("Previous mgmt IE is equals to current IE"));
 				goto exit;
 			}
 
@@ -1547,6 +1535,16 @@ wl_cfgp2p_listen_complete(struct wl_priv *wl, bcm_struct_cfgdev *cfgdev,
 	CFGP2P_DBG((" Enter\n"));
 
 	ndev = cfgdev_to_wlc_ndev(cfgdev, wl);
+
+#if defined(CUSTOM_PLATFORM_NV_TEGRA)
+#if defined(P2P_DISCOVERY_WAR)
+	if (!wl->p2p->vif_created) {
+		if (wldev_iovar_setint(ndev, "mpc", 1) < 0) {
+			WL_ERR(("mpc enabling back failed\n"));
+		}
+	}
+#endif /* defined(P2P_DISCOVERY_WAR) */
+#endif /* defined(CUSTOM_PLATFORM_NV_TEGRA) */
 
 	if (wl_get_p2p_status(wl, LISTEN_EXPIRED) == 0) {
 		wl_set_p2p_status(wl, LISTEN_EXPIRED);
@@ -2467,21 +2465,11 @@ static int wl_cfgp2p_do_ioctl(struct net_device *net, struct ifreq *ifr, int cmd
 static int wl_cfgp2p_if_open(struct net_device *net)
 {
 	extern struct wl_priv *wlcfg_drv_priv;
-	WL_TRACE(("Enter\n"));
 	struct wireless_dev *wdev = net->ieee80211_ptr;
 	struct wl_priv *wl = NULL;
 	wl = wlcfg_drv_priv;
-#ifdef USI_MFG
-	if(isMFG){
-		WL_TRACE(("is a MFG firmware, skip p2p initial\n"));
-		return 0;
-	}
-	else 
-#endif /*USI_MFG*/
-	if (!wdev || !wl || !wl->p2p){
-		WL_TRACE(("EINVAL\n"));
+	if (!wdev || !wl || !wl->p2p)
 		return -EINVAL;
-	}
 	WL_TRACE(("Enter\n"));
 #if !defined(WL_IFACE_COMB_NUM_CHANNELS)
 	/* If suppose F/W download (ifconfig wlan0 up) hasn't been done by now,
