@@ -16,8 +16,7 @@ DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER                     \
 	-DDHD_DONOT_FORWARD_BCMEVENT_AS_NETWORK_PKT -DAMPDU_HOSTREORDER       \
 	-DCUSTOM_SDIO_F2_BLKSIZE=128 -DSUPPORT_PM2_ONLY -DWL_SDO -DWLTDLS     \
 	-DWL_SUPPORT_BACKPORTED_KPATCHES -DUSE_SDIOFIFO_IOVAR                 \
-	-I../hardware/wifi/broadcom/drivers/usi/bcmdhd -I../hardware/wifi/broadcom/drivers/usi/bcmdhd/include   \
-	-I../hardware/wifi/broadcom/drivers/net/wireless/bcmdhd-1.88.45/common/include
+	-I$(src) -I$(src)/include
 
 DHDOFILES = aiutils.o bcmsdh_sdmmc_linux.o dhd_linux.o siutils.o bcmutils.o   \
 	dhd_linux_sched.o dhd_sdio.o bcmwifi_channels.o bcmevent.o hndpmu.o dhd_bta.o  \
